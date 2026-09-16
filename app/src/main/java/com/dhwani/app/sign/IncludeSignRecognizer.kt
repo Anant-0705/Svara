@@ -6,7 +6,6 @@ import ai.onnxruntime.OrtSession
 import android.content.Context
 import android.os.SystemClock
 import android.util.Log
-import org.json.JSONObject
 import java.io.Closeable
 import java.nio.FloatBuffer
 import kotlin.math.exp
@@ -35,9 +34,13 @@ class IncludeSignRecognizer(context: Context) : Closeable {
         val assets = context.assets
         val model = assets.open(MODEL_ASSET).use { it.readBytes() }
         session = environment.createSession(model, OrtSession.SessionOptions())
-        val labelsJson = assets.open(LABELS_ASSET).bufferedReader().use { it.readText() }
-        val labelsArray = JSONObject(labelsJson).getJSONArray("display_labels")
-        labels = List(labelsArray.length()) { labelsArray.getString(it) }
+        labels = assets.open(LABELS_ASSET).bufferedReader().useLines { lines ->
+            lines
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .map { it.uppercase() }
+                .toList()
+        }
         check(labels.size == OUTPUT_CLASSES) { "INCLUDE label count does not match model output" }
 
         val warmupStartedAt = SystemClock.elapsedRealtime()
@@ -104,10 +107,10 @@ class IncludeSignRecognizer(context: Context) : Closeable {
     }
 
     private companion object {
-        const val MODEL_ASSET = "models/sign/include_transformer_small.onnx"
-        const val LABELS_ASSET = "models/sign/include_transformer_labels.json"
-        const val INPUT_NAME = "landmarks"
-        const val OUTPUT_CLASSES = 263
+        const val MODEL_ASSET = "models/sign/dhwani_include_transformer.onnx"
+        const val LABELS_ASSET = "models/sign/dhwani_labels.txt"
+        const val INPUT_NAME = "keypoints"
+        const val OUTPUT_CLASSES = 10
         const val TAG = "DhwaniSign"
     }
 }

@@ -1,0 +1,10 @@
+bathroom
+cellphone
+doctor
+hello
+hospital
+medicine
+money
+patient
+sick
+thankyou
