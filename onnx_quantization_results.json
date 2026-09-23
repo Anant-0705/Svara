@@ -1,0 +1,20 @@
+{
+  "fp32_model": "dhwani_include_transformer.onnx",
+  "int8_model": "dhwani_include_transformer_int8.onnx",
+  "test_videos": 34,
+  "fp32_size_mb": 14.4522,
+  "int8_size_mb": 3.68,
+  "size_reduction_percent": 74.537,
+  "fp32_correct": 33,
+  "fp32_accuracy": 0.9705882352941176,
+  "fp32_macro_precision": 0.9800000000000001,
+  "fp32_macro_recall": 0.9666666666666666,
+  "fp32_macro_f1": 0.968888888888889,
+  "int8_correct": 29,
+  "int8_accuracy": 0.8529411764705882,
+  "int8_macro_precision": 0.8444444444444444,
+  "int8_macro_recall": 0.8333333333333333,
+  "int8_macro_f1": 0.8115384615384615,
+  "prediction_agreement": 0.8823529411764706,
+  "accuracy_difference": -0.11764705882352944
+}
