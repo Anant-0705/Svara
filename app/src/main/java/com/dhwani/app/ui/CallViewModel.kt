@@ -265,7 +265,20 @@ class CallViewModel(application: Application) : AndroidViewModel(application) {
                         signCandidates = emptyList(),
                         selectedSignGloss = "",
                         signSentence = "",
-                        signStatus = "No complete sign was captured. Keep your face, shoulders, and hands in frame, then try again.",
+                        signStatus = "No hands were detected clearly. Set the phone farther away so your upper body and hands are visible, then try again.",
+                    )
+                }
+                return
+            }
+
+            "INSUFFICIENT_FRAMES" -> {
+                _state.update {
+                    it.copy(
+                        isSignCapturing = false,
+                        signCandidates = emptyList(),
+                        selectedSignGloss = "",
+                        signSentence = "",
+                        signStatus = "The camera processed too few frames. Try brighter light or the rear camera, then try again.",
                     )
                 }
                 return
