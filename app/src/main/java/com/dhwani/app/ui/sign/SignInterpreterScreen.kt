@@ -123,7 +123,7 @@ fun SignInterpreterScreen(
                             )
                         )
                         Text(
-                            text = "Real-time ISL Gesture Recognition",
+                            text = "Offline recognition of 10 ISL signs",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontSize = 12.sp,
                                 color = Color(0xFF708A77)
@@ -189,7 +189,7 @@ fun SignInterpreterScreen(
                                             ViewGroup.LayoutParams.MATCH_PARENT,
                                             ViewGroup.LayoutParams.MATCH_PARENT
                                         )
-                                        scaleType = PreviewView.ScaleType.FILL_CENTER
+                                        scaleType = PreviewView.ScaleType.FIT_CENTER
                                     }
 
                                     val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
@@ -330,6 +330,14 @@ fun SignInterpreterScreen(
                     }
                 }
 
+                Text(
+                    text = "Move the phone back until your shoulders and hands are visible in the camera preview. Sign once after tapping Recognize.",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 12.sp,
+                        color = Color(0xFF708A77),
+                    ),
+                )
+
                 // Action Controls Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -439,7 +447,7 @@ fun SignInterpreterScreen(
                                     color = Color(0xFFE4F3E8)
                                 ) {
                                     Text(
-                                        text = "Sign: ${state.selectedSignGloss}",
+                                        text = "Sign: ${state.selectedSignGloss.replace("THANKYOU", "THANK YOU")}",
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontSize = 11.sp,
@@ -507,7 +515,7 @@ fun SignInterpreterScreen(
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
                                         Text(
-                                            text = phrase.gloss,
+                                            text = phrase.gloss.replace("THANKYOU", "THANK YOU"),
                                             style = MaterialTheme.typography.titleMedium.copy(
                                                 fontSize = 15.sp,
                                                 fontWeight = FontWeight.Bold,
