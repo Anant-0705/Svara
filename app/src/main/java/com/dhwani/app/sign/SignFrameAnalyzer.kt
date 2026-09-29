@@ -78,24 +78,35 @@ class SignFrameAnalyzer(
             val timestamp = maxOf(SystemClock.uptimeMillis(), lastTimestamp + 1L)
             lastTimestamp = timestamp
 
+            var gestureResult: GestureRecognizerResult? = null
             if (analyzedFrameCount % GESTURE_SAMPLE_EVERY == 0) {
                 gestureAnalyzedFrameCount += 1
-                recordGesture(gestureRecognizer!!.recognizeForVideo(mpImage, timestamp))
+                val detectedGesture = gestureRecognizer!!.recognizeForVideo(mpImage, timestamp)
+                gestureResult = detectedGesture
+                recordGesture(detectedGesture)
             }
             val holisticResult = holisticLandmarker!!.detectForVideo(mpImage, timestamp)
             analyzedFrameCount += 1
-            val frame = extractFrame(holisticResult)
+            val frame = extractFrame(holisticResult, gestureResult)
             capturedFrames += frame.values
             if (frame.hasHand) handFrameCount += 1
             if (frame.framingReliable) reliableFrameCount += 1
 
             val elapsed = now - captureStartedAt
-            if (elapsed >= CAPTURE_DURATION_MS) {
+            if (SignCapturePolicy.shouldFinish(elapsed, capturedFrames.size, handFrameCount)) {
                 finishCapture()
+            } else if (elapsed >= SignCapturePolicy.TARGET_DURATION_MS) {
+                postStatus(
+                    if (handFrameCount == 0) "Move back until a hand is visible"
+                    else "Capturing a few more sign frames...",
+                )
             } else if (elapsed >= ALMOST_DONE_STATUS_AFTER_MS) {
                 postStatus("Finishing - return to a resting pose")
             } else if (elapsed >= HOLD_STATUS_AFTER_MS) {
-                postStatus("Keep going - complete the sign")
+                postStatus(
+                    if (handFrameCount == 0) "Move back until your hands are visible"
+                    else "Keep going - complete the sign",
+                )
             }
         } catch (error: Throwable) {
             captureRequested = false
@@ -171,12 +182,10 @@ class SignFrameAnalyzer(
             analyzedFrames = gestureAnalyzedFrameCount,
         )
         val hasMeaningfulMotion = SignMotionAnalyzer.hasMeaningfulMotion(capturedFrames)
-        if (stableGesture != null && !hasMeaningfulMotion) {
-            mainHandler.post { onResult(stableGesture) }
-            return
-        }
 
-        if (capturedFrames.size >= MIN_MODEL_FRAMES && handFrameCount >= MIN_HAND_FRAMES) {
+        // A held ISL sign can resemble a generic hand gesture. Give the trained
+        // ten-class ISL model first chance before falling back to gesture labels.
+        if (SignCapturePolicy.canInfer(capturedFrames.size, handFrameCount)) {
             val framingReliable = reliableFrameCount >= MIN_RELIABLE_FRAMES &&
                 reliableFrameCount * 2 >= handFrameCount
             val captureDurationMs = (SystemClock.elapsedRealtime() - captureStartedAt).coerceAtLeast(1L)
@@ -204,18 +213,35 @@ class SignFrameAnalyzer(
             return
         }
 
-        val rejected = if (handFrameCount >= MIN_HAND_FRAMES) {
-            SignRecognitionPolicy.unknownSign()
-        } else {
+        val rejected = if (capturedFrames.size < SignCapturePolicy.MIN_MODEL_FRAMES) {
+            SignRecognitionPolicy.insufficientFrames()
+        } else if (handFrameCount < SignCapturePolicy.MIN_HAND_FRAMES) {
             SignRecognitionPolicy.noSign()
+        } else {
+            SignRecognitionPolicy.unknownSign()
         }
         mainHandler.post { onResult(rejected) }
     }
 
-    private fun extractFrame(result: HolisticLandmarkerResult): ExtractedSignFrame {
+    private fun extractFrame(
+        result: HolisticLandmarkerResult,
+        gestureResult: GestureRecognizerResult?,
+    ): ExtractedSignFrame {
         val pose = result.poseLandmarks()
-        val leftHand = result.leftHandLandmarks().takeIf { it.size >= 21 }.orEmpty()
-        val rightHand = result.rightHandLandmarks().takeIf { it.size >= 21 }.orEmpty()
+        val holisticLeft = result.leftHandLandmarks().takeIf { it.size >= 21 }.orEmpty()
+        val holisticRight = result.rightHandLandmarks().takeIf { it.size >= 21 }.orEmpty()
+        // Use the standalone hand detector only when Holistic found no hands at
+        // all; mixing detectors within a frame could duplicate one hand.
+        val leftHand = if (holisticLeft.isEmpty() && holisticRight.isEmpty()) {
+            gestureHand(gestureResult, "Left")
+        } else {
+            holisticLeft
+        }
+        val rightHand = if (holisticLeft.isEmpty() && holisticRight.isEmpty()) {
+            gestureHand(gestureResult, "Right")
+        } else {
+            holisticRight
+        }
         val hasHand = leftHand.isNotEmpty() || rightHand.isNotEmpty()
 
         val framingReliable = pose.size >= POSE_POINTS && hasReliableUpperBody(pose) &&
@@ -230,6 +256,17 @@ class SignFrameAnalyzer(
         leftHand.copyInto(values, LEFT_HAND_OFFSET)
         rightHand.copyInto(values, RIGHT_HAND_OFFSET)
         return ExtractedSignFrame(values, hasHand, framingReliable)
+    }
+
+    private fun gestureHand(
+        result: GestureRecognizerResult?,
+        side: String,
+    ): List<NormalizedLandmark> {
+        if (result == null) return emptyList()
+        val index = result.handedness().indexOfFirst { categories ->
+            categories.firstOrNull()?.categoryName()?.equals(side, ignoreCase = true) == true
+        }
+        return result.landmarks().getOrNull(index)?.takeIf { it.size >= 21 }.orEmpty()
     }
 
     private fun List<NormalizedLandmark>.copyInto(output: FloatArray, offset: Int) {
@@ -259,7 +296,7 @@ class SignFrameAnalyzer(
 
     private fun NormalizedLandmark.isReliablePosePoint(): Boolean {
         return isInsideFrame() &&
-            visibility().orElse(0f) >= MIN_POSE_VISIBILITY &&
+            visibility().orElse(1f) >= MIN_POSE_VISIBILITY &&
             presence().orElse(1f) >= MIN_POSE_PRESENCE
     }
 
@@ -328,14 +365,11 @@ class SignFrameAnalyzer(
     private companion object {
         const val HOLISTIC_ASSET = "models/sign/holistic_landmarker.task"
         const val GESTURE_ASSET = "models/sign/gesture_recognizer.task"
-        const val CAPTURE_DURATION_MS = 3_600L
         const val HOLD_STATUS_AFTER_MS = 1_100L
         const val ALMOST_DONE_STATUS_AFTER_MS = 2_700L
         const val FRAME_INTERVAL_MS = 45L
         const val GESTURE_SAMPLE_EVERY = 2
-        const val MIN_MODEL_FRAMES = 12
-        const val MIN_HAND_FRAMES = 8
-        const val MIN_RELIABLE_FRAMES = 8
+        const val MIN_RELIABLE_FRAMES = 3
         const val MIN_GESTURE_FRAME_CONFIDENCE = 0.35f
         const val POSE_POINTS = 25
         const val LEFT_HAND_OFFSET = POSE_POINTS * 2
@@ -352,6 +386,20 @@ class SignFrameAnalyzer(
         const val FRAME_MARGIN = 0f
         const val TAG = "DhwaniSign"
     }
+}
+
+internal object SignCapturePolicy {
+    const val TARGET_DURATION_MS = 3_600L
+    const val MAX_DURATION_MS = 8_000L
+    const val MIN_MODEL_FRAMES = 10
+    const val MIN_HAND_FRAMES = 4
+
+    fun canInfer(frameCount: Int, handFrameCount: Int): Boolean =
+        frameCount >= MIN_MODEL_FRAMES && handFrameCount >= MIN_HAND_FRAMES
+
+    fun shouldFinish(elapsedMs: Long, frameCount: Int, handFrameCount: Int): Boolean =
+        elapsedMs >= MAX_DURATION_MS ||
+            (elapsedMs >= TARGET_DURATION_MS && canInfer(frameCount, handFrameCount))
 }
 
 private data class ExtractedSignFrame(
