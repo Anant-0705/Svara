@@ -51,6 +51,13 @@ class SignModelSmokeTest {
             assertEquals(3, recognition.candidates.size)
             assertTrue(recognition.candidates.all { it.confidence in 0f..1f })
         }
+
+        val bundledLabels = context.assets.open("models/sign/dhwani_labels.txt")
+            .bufferedReader().useLines { lines ->
+                lines.map { it.trim().uppercase() }.filter { it.isNotEmpty() }.toSet()
+            }
+        assertEquals(bundledLabels, SignRecognitionPolicy.supportedIncludeGlosses)
+        assertEquals(bundledLabels, SignVocabulary.demoPhrases.map { it.gloss }.toSet())
     }
 
     private fun syntheticLandmarkFrame(): FloatArray {

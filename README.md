@@ -68,20 +68,17 @@ the device.
 ## Models
 
 Sign recognition uses a hybrid offline pipeline. Google's MediaPipe Gesture
-Recognizer handles seven stable single-hand gestures. ISL recognition uses the
-official small Transformer checkpoint from the MIT-licensed
-[AI4Bharat INCLUDE repository](https://github.com/AI4Bharat/INCLUDE), converted
-to ONNX without changing its weights. It reads up to 169 frames containing the
-first 25 pose landmarks and all 21 landmarks from each hand.
+Recognizer provides generic hand-gesture fallback. ISL recognition uses a
+10-class Transformer fine-tuned from the small pretrained checkpoint in the
+[AI4Bharat INCLUDE repository](https://github.com/AI4Bharat/INCLUDE) and
+exported to FP32 ONNX. It reads up to 169 frames containing the first 25 pose
+landmarks and all 21 landmarks from each hand. The supported model labels are
+`BATHROOM`, `CELLPHONE`, `DOCTOR`, `HELLO`, `HOSPITAL`, `MEDICINE`, `MONEY`,
+`PATIENT`, `SICK`, and `THANKYOU`. A result must agree across temporal views
+and pass confidence and class-separation checks; otherwise it is shown as
+unknown.
 
-The INCLUDE model was trained as a 263-class isolated-word classifier. Dhwani
-only accepts a focused subset useful during calls, including greetings,
-pronouns, health terms, phone terms, money, and time. A result must agree across
-three temporal views and pass confidence, framing, and class-separation checks.
-Anything else is shown as unknown instead of being forced into labels such as
-`DOG`, `ELECTION`, or `TRANSPORTATION`.
-
-Tap **Recognize sign**, keep your face, shoulders, elbows, and hands visible,
-then perform one complete sign once. The app recognizes isolated signs, not
-continuous sign-language sentences. `FLOWER` is not one of the INCLUDE classes
-and is intentionally returned as unknown.
+Tap **Recognize sign**, move the phone back until your shoulders and hands are
+visible, then perform one complete sign once. The app recognizes isolated
+signs, not continuous sign-language sentences. It may take up to eight seconds
+to collect enough frames on a slower phone.
