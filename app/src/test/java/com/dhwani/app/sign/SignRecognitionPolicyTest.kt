@@ -36,6 +36,27 @@ class SignRecognitionPolicyTest {
     }
 
     @Test
+    fun acceptsEveryDeployedModelLabel() {
+        val labels = listOf(
+            "BATHROOM", "CELLPHONE", "DOCTOR", "HELLO", "HOSPITAL",
+            "MEDICINE", "MONEY", "PATIENT", "SICK", "THANKYOU",
+        )
+        assertEquals(labels.toSet(), SignRecognitionPolicy.supportedIncludeGlosses)
+        labels.forEach { label ->
+            assertNotNull(
+                label,
+                SignRecognitionPolicy.acceptInclude(
+                    recognition(
+                        top = SignCandidate(label, 0.90f),
+                        second = SignCandidate("OTHER", 0.05f),
+                        agreement = 1f,
+                    ),
+                ),
+            )
+        }
+    }
+
+    @Test
     fun acceptsStrongTwoViewConsensus() {
         val recognition = recognition(
             top = SignCandidate("HELLO", 0.43f),
@@ -82,8 +103,8 @@ class SignRecognitionPolicyTest {
     @Test
     fun rejectsAmbiguousIncludePrediction() {
         val recognition = recognition(
-            top = SignCandidate("YOU (PLURAL)", 0.58f),
-            second = SignCandidate("TELEPHONE", 0.51f),
+            top = SignCandidate("CELLPHONE", 0.58f),
+            second = SignCandidate("HELLO", 0.51f),
             agreement = 1f,
         )
 

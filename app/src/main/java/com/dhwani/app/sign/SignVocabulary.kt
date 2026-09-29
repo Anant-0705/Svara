@@ -10,15 +10,16 @@ data class SignPhrase(
 
 object SignVocabulary {
     val demoPhrases: List<SignPhrase> = listOf(
+        SignPhrase("BATHROOM", "Bathroom.", "बाथरूम।"),
+        SignPhrase("CELLPHONE", "Cellphone.", "मोबाइल फोन।"),
+        SignPhrase("DOCTOR", "Doctor.", "डॉक्टर।"),
         SignPhrase("HELLO", "Hello.", "नमस्ते।"),
-        SignPhrase("HOW ARE YOU", "How are you?", "आप कैसे हैं?"),
-        SignPhrase("THANK YOU", "Thank you.", "धन्यवाद।"),
-        SignPhrase("GOOD MORNING", "Good morning.", "सुप्रभात।"),
-        SignPhrase("DOCTOR", "I need to speak to the doctor.", "मुझे डॉक्टर से बात करनी है।"),
-        SignPhrase("HOSPITAL", "I need to go to the hospital.", "मुझे अस्पताल जाना है।"),
-        SignPhrase("MEDICINE", "I am calling about my medicines.", "मैं अपनी दवाइयों के बारे में बात कर रहा हूं।"),
-        SignPhrase("TELEPHONE", "Please call me.", "कृपया मुझे फोन कीजिए।"),
-        SignPhrase("MONEY", "I am calling about the money.", "मैं पैसों के बारे में बात कर रहा हूं।"),
+        SignPhrase("HOSPITAL", "Hospital.", "अस्पताल।"),
+        SignPhrase("MEDICINE", "Medicine.", "दवाई।"),
+        SignPhrase("MONEY", "Money.", "पैसे।"),
+        SignPhrase("PATIENT", "Patient.", "मरीज़।"),
+        SignPhrase("SICK", "Sick.", "बीमार।"),
+        SignPhrase("THANKYOU", "Thank you.", "धन्यवाद।"),
     )
 
     fun find(gloss: String): SignPhrase? {
@@ -34,7 +35,7 @@ object SignVocabulary {
         if (normalizedGloss == "YOU(PLURAL)" || normalizedGloss == "YOU (PLURAL)") {
             return if (languageLabel.equals("Hindi", ignoreCase = true)) "आप सब।" else "All of you."
         }
-        if (normalizedGloss == "THANKYOU") {
+        if (normalizedGloss == "THANKYOU" || normalizedGloss == "THANK YOU") {
             return if (languageLabel.equals("Hindi", ignoreCase = true)) "धन्यवाद।" else "Thank you."
         }
         if (cleanGloss.equals("MY HOME", ignoreCase = true) && context.voiceFriendlyAddress.isNotBlank()) {

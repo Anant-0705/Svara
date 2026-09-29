@@ -2,7 +2,6 @@ package com.dhwani.app.sign
 
 import com.dhwani.app.data.UserContext
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SignVocabularyTest {
@@ -10,11 +9,8 @@ class SignVocabularyTest {
     fun demoVocabularyContainsPhoneCallSigns() {
         val glosses = SignVocabulary.demoPhrases.map { it.gloss }
 
-        assertTrue("HELLO" in glosses)
-        assertTrue("HOW ARE YOU" in glosses)
-        assertTrue("DOCTOR" in glosses)
-        assertTrue("MEDICINE" in glosses)
-        assertTrue(glosses.all { it in SignRecognitionPolicy.supportedIncludeGlosses })
+        assertEquals(SignRecognitionPolicy.supportedIncludeGlosses, glosses.toSet())
+        assertEquals(10, glosses.size)
     }
 
     @Test

@@ -14,55 +14,20 @@ object SignRecognitionPolicy {
 
     private val lowerConfidenceGreetings = setOf(
         "HELLO",
-        "HOW ARE YOU",
-        "THANK YOU",
-        "GOOD MORNING",
-        "GOOD AFTERNOON",
-        "GOOD EVENING",
-        "GOOD NIGHT",
+        "THANKYOU",
     )
 
     val supportedIncludeGlosses: Set<String> = setOf(
-        "HELLO",
-        "HOW ARE YOU",
-        "THANK YOU",
-        "GOOD MORNING",
-        "GOOD AFTERNOON",
-        "GOOD EVENING",
-        "GOOD NIGHT",
-        "GOOD",
-        "BAD",
-        "HAPPY",
-        "SAD",
-        "SICK",
-        "HEALTHY",
+        "BATHROOM",
+        "CELLPHONE",
         "DOCTOR",
+        "HELLO",
         "HOSPITAL",
         "MEDICINE",
-        "PATIENT",
-        "TELEPHONE",
-        "CELLPHONE",
-        "LOCATION",
-        "BILL",
         "MONEY",
-        "PRICE",
-        "TODAY",
-        "TOMORROW",
-        "YESTERDAY",
-        "TIME",
-        "I",
-        "YOU",
-        "YOU (PLURAL)",
-        "WE",
-        "THEY",
-        "HE",
-        "SHE",
-        "FAMILY",
-        "FRIEND",
-        "MOTHER",
-        "FATHER",
-        "DEAF",
-        "SIGN",
+        "PATIENT",
+        "SICK",
+        "THANKYOU",
     )
 
     fun stableGesture(
@@ -138,6 +103,11 @@ object SignRecognitionPolicy {
 
     fun noSign(): SignRecognition = SignRecognition(
         candidates = listOf(SignCandidate("NO_SIGN_DETECTED", 1f)),
+        framingReliable = false,
+    )
+
+    fun insufficientFrames(): SignRecognition = SignRecognition(
+        candidates = listOf(SignCandidate("INSUFFICIENT_FRAMES", 1f)),
         framingReliable = false,
     )
 
